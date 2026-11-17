@@ -17,7 +17,7 @@ class GenerationError(RuntimeError):
 
 def generate_screenplay(request: dict[str, Any]) -> dict[str, Any]:
     """Generate structured screenplay scenes or branches with Gemini."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = _setting("GEMINI_API_KEY")
     if not api_key:
         raise GenerationError("GEMINI_API_KEY is not configured.")
 
@@ -30,7 +30,7 @@ def generate_screenplay(request: dict[str, Any]) -> dict[str, Any]:
 
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        model=_setting("GEMINI_MODEL", "gemini-2.0-flash"),
         contents=build_generation_prompt(request),
         config={"response_mime_type": "application/json"},
     )
@@ -71,6 +71,9 @@ Established lore and world rules:
 {json.dumps(lore, ensure_ascii=False, indent=2)}
 
 Respect every established character trait, fact, ability, and world rule.
+Write a new screenplay scene from the request; do not copy, repeat, or return
+the request text as the screenplay. Include original action, setting, and
+dialogue where appropriate.
 Return only valid JSON with this exact shape:
 {{
   "branches": [
@@ -94,3 +97,18 @@ Return only valid JSON with this exact shape:
 Use canonical predicates: knows_language, occupation, and lives_in.
 Do not invent contradictions. Keep assertions explicit and evidence-based.
 """.strip()
+
+
+def _setting(name: str, default: str | None = None) -> str | None:
+    value = os.getenv(name)
+    if value:
+        return value
+
+    try:
+        import streamlit as st
+
+        secret_value = st.secrets.get(name)
+    except (ImportError, FileNotFoundError, RuntimeError):
+        secret_value = None
+
+    return secret_value or default
