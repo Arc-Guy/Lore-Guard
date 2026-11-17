@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "characters": {
+    "Mira": {
+      "description": "A careful investigator.",
+      "traits": [
+        "cautious",
+        "observant"
+      ],
+      "contradictory_traits": {
+        "reckless": [
+          "cautious"
+        ],
+        "careless": [
+          "observant"
+        ]
+      },
+      "known_facts": {
+        "knows_language": "French",
+        "occupation": "investigator"
+      }
+    }
+  },
+  "world_rules": [
+    {
+      "id": "WR-001",
+      "description": "No character can use magic in this world.",
+      "subject": "*",
+      "predicate": "has_magic",
+      "value": false,
+      "severity": "high"
+    }
+  ],
+  "established_facts": [
+    {
+      "id": "F-001",
+      "subject": "Mira",
+      "predicate": "knows_language",
+      "value": "French",
+      "severity": "high"
+    },
+    {
+      "id": "F-002",
+      "subject": "Mira",
+      "predicate": "occupation",
+      "value": "investigator",
+      "severity": "medium"
+    }
+  ],
+  "scene_history": [
+    {
+      "scene_id": "scene_00",
+      "title": "The first clue",
+      "actions": [
+        {
+          "character": "Mira",
+          "action": "checks the locked door"
+        }
+      ]
+    }
+  ]
+}
