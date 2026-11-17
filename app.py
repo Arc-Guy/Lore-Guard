@@ -182,12 +182,14 @@ elif page == "Character Studio":
 
                 description = st.text_area(
                     "Description",
-                    value=profile.get("description", "")
+                    value=profile.get("description", ""),
+                    key=f"description_{name}"
                 )
 
                 traits = st.text_input(
                     "Personality traits (comma separated)",
-                    value=", ".join(profile.get("traits", []))
+                    value=", ".join(profile.get("traits", [])),
+                    key=f"traits_{name}"
                 )
 
                 facts_json = st.text_area(
@@ -195,10 +197,14 @@ elif page == "Character Studio":
                     value=json.dumps(
                         profile.get("known_facts", {}),
                         indent=2
-                    )
+                    ),
+                    key=f"facts_{name}"
                 )
 
-                save = st.form_submit_button("Save Character")
+                save = st.form_submit_button(
+                    "Save Character",
+                    key=f"save_{name}"
+                )
 
                 if save:
 
