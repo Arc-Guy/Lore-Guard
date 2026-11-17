@@ -6,6 +6,7 @@ from pathlib import Path
 from consistency_engine import load_memory, save_memory
 from lore_guard import audit_lore
 from fact_extractor import extract_candidates
+from ai_generator import generate_screenplay
 
 
 # ==========================================
@@ -22,15 +23,10 @@ MEMORY_FILE = Path(__file__).parent / "memory.json"
 
 
 # ==========================================
-# 2. OPTIONAL PERSON 4 INTEGRATION
+# 2. GENERATION AND INTEGRATION
 # ==========================================
 
-try:
-    from integration import generate_and_check
-except ImportError:
-    generate_and_check = None
-except AttributeError:
-    generate_and_check = None
+from integration import generate_and_check
 
 
 # ==========================================
@@ -71,13 +67,7 @@ st.caption(
     "and explore alternative narratives."
 )
 
-if generate_and_check:
-    st.success("Generation integration is available.")
-else:
-    st.info(
-        "AI generation integration is pending. "
-        "You can already use the lore consistency checker."
-    )
+st.success("Generation and consistency integration is available.")
 
 st.divider()
 
@@ -403,44 +393,37 @@ elif page == "Screenplay Generator":
 
             st.warning("Enter a scene description.")
 
-        elif generate_and_check:
-
-            try:
-
-                with st.spinner("Generating screenplay..."):
-
-                    result = generate_and_check(
-                        memory,
-                        memory.get("characters", {}),
-                        prompt,
-                        genre
-                    )
-
-                    st.session_state.screenplay = result.get(
-                        "scene", ""
-                    )
-
-                    st.session_state.branches = result.get(
-                        "branches", []
-                    )
-
-                    st.session_state.report = result.get(
-                        "consistency"
-                    )
-
-                st.success("Generation completed!")
-
-            except Exception as e:
-
-                st.error(f"Generation error: {e}")
-
         else:
+            with st.spinner("Generating screenplay..."):
+                result = generate_and_check(
+                    generate_screenplay,
+                    {
+                        "prompt": prompt,
+                        "genre": genre,
+                        "memory": memory,
+                        "characters": memory.get("characters", {}),
+                        "branch_count": 3,
+                    },
+                    memory,
+                    branches=True,
+                )
 
-            st.info(
-                "Person 1 and Person 4's generation integration "
-                "is not available yet. You can paste an existing "
-                "screenplay below and test Person 2's checker."
-            )
+            if not result["ok"]:
+                st.error(result["error"])
+            else:
+                branch_results = result["results"]
+                st.session_state.branches = [
+                    item["branch"] for item in branch_results
+                ]
+                st.session_state.report = (
+                    branch_results[0]["report"] if branch_results else None
+                )
+                st.session_state.screenplay = "\n\n".join(
+                    branch["screenplay_text"]
+                    for branch in st.session_state.branches
+                    if branch.get("screenplay_text")
+                )
+                st.success("Generation completed and all branches were checked.")
 
     st.divider()
 
@@ -497,7 +480,10 @@ elif page == "Consistency Report":
 
     if report:
 
-        score = report.get("score", 0)
+        score = report.get(
+            "score",
+            report.get("consistency_score", 0)
+        )
 
         col1, col2 = st.columns(2)
 
