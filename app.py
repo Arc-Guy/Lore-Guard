@@ -412,16 +412,14 @@ elif page == "Screenplay Generator":
                 st.error(result["error"])
             else:
                 branch_results = result["results"]
-                st.session_state.branches = [
-                    item["branch"] for item in branch_results
-                ]
+                st.session_state.branches = branch_results
                 st.session_state.report = (
                     branch_results[0]["report"] if branch_results else None
                 )
                 st.session_state.screenplay = "\n\n".join(
-                    branch["screenplay_text"]
-                    for branch in st.session_state.branches
-                    if branch.get("screenplay_text")
+                    item["branch"].get("screenplay_text", "")
+                    for item in st.session_state.branches
+                    if item["branch"].get("screenplay_text")
                 )
                 st.success("Generation completed and all branches were checked.")
 
@@ -562,13 +560,37 @@ elif page == "Story Branches":
 
     if st.session_state.branches:
 
-        for i, branch in enumerate(
+        for i, branch_result in enumerate(
             st.session_state.branches
         ):
+            branch = branch_result.get("branch", {})
+            report = branch_result.get("report", {})
+            score = report.get(
+                "score",
+                report.get("consistency_score", 0)
+            )
 
             with st.expander(f"Story Branch {i + 1}"):
 
-                st.write(branch)
+                st.subheader(branch.get("title", f"Branch {i + 1}"))
+
+                col1, col2 = st.columns(2)
+                col1.metric("Consistency Score", f"{score}/100")
+                col2.metric("Contradictions", len(report.get("issues", [])))
+
+                if report.get("consistent", not report.get("issues")):
+                    st.success("This branch is consistent with the story memory.")
+                else:
+                    st.error("This branch contains continuity problems.")
+
+                if branch.get("screenplay_text"):
+                    st.markdown(branch["screenplay_text"])
+
+                for issue in report.get("issues", []):
+                    st.warning(issue.get("message", issue.get("description", "Issue detected")))
+
+                with st.expander("Structured scene data"):
+                    st.json(branch)
 
     else:
 
